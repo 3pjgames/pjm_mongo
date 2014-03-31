@@ -1,7 +1,7 @@
--record(config, {host = "localhost",
-                 port = 27017,
-                 pool_name = pjm_mongo_pool,
-                 pool_size = 5,
-                 database = pjm_mongo,
-                 read_mode = master,
-                 write_mode = safe}).
+-record(config, {host = "localhost" :: string(),
+                 port = 27017 :: integer(),
+                 pool_name = pjm_mongo_pool :: atom(),
+                 pool_size = 5 :: integer(),
+                 database = pjm_mongo :: atom(),
+                 read_mode = master :: atom(),
+                 write_mode = safe :: atom()}).

@@ -6,9 +6,7 @@
   {applications, [
                   kernel,
                   stdlib,
-                  pjm,
                   bson,
-                  pjm_bson,
                   mongodb
                  ]},
   {mod, { pjm_mongo_app, []}},

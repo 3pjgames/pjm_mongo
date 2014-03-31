@@ -7,7 +7,7 @@
 -export([start_link/0, start_link/1, start_link/2]).
 -export([stop/0, stop/1]).
 -export([sync_stop/0, sync_stop/1]).
--export([config/0, config/1]).
+-export([get_config/0, get_config/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -21,7 +21,7 @@
 
 -spec start_link() -> {ok, pid()}.
 start_link() ->
-    gen_server:start_link(?MODULE, [], []).
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 -spec start_link([proplists:property()]) -> {ok, pid()}.
 start_link(Args) ->
@@ -46,12 +46,12 @@ sync_stop() ->
 sync_stop(Pid) ->
     gen_server:call(Pid, stop).
 
--spec config() -> #config{}.
-config() -> get(?MODULE).
+-spec get_config() -> #config{}.
+get_config() -> get_config(?MODULE).
 
--spec config(pid()) -> #config{}.
-config(Pid) ->
-    gen_server:call(Pid, get).
+-spec get_config(pid()) -> #config{}.
+get_config(Pid) ->
+    gen_server:call(Pid, get_config).
 
 %%% ==================================================================
 %%% gen_server callbacks
@@ -63,7 +63,7 @@ init(Args) ->
     {ok, _} = start_pool(Config),
     {ok, #state{config = Config}}.
 
-handle_call(get, _From, State) ->
+handle_call(get_config, _From, State) ->
     {reply, State#state.config, State};
 handle_call(stop, _From, State) ->
     stop_pool(State#state.config),
@@ -111,6 +111,8 @@ set_config({read_mode, V}, Config) ->
     Config#config{ read_mode = V };
 set_config({write_mode, V}, Config) ->
     Config#config{ write_mode = V };
+set_config(Args, Config) when is_list(Args) ->
+    lists:foldl(fun set_config/2, Config, Args);
 set_config(_, Config) ->
     Config.
 
