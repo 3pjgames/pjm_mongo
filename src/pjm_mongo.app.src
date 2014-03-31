@@ -1,0 +1,16 @@
+{application, pjm_mongo,
+ [
+  {description, "PJM Mongo Driver"},
+  {vsn, git},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  pjm,
+                  bson,
+                  pjm_bson,
+                  mongodb
+                 ]},
+  {mod, { pjm_mongo_app, []}},
+  {env, []}
+ ]}.
