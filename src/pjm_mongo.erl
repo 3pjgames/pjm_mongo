@@ -9,10 +9,15 @@
 -export([delete/2, do_delete/2]).
 -export([find_one/3, find_one/4, find_one/5]).
 -export([do_find_one/3, do_find_one/4, do_find_one/5]).
+-export([find_one_or_insert/3]).
+-export([do_find_one_or_insert/3]).
 -export([find/3, find/4, find/5, find/6]).
 -export([do_find/3, do_find/4, do_find/5, do_find/6]).
 -export([command/2, do_command/2]).
 -export([list_collections/1, do_list_collections/1]).
+
+-type mongo() :: {?MODULE, #config{}}.
+-export_type([mongo/0]).
 
 -define(WRAP_DO(Name, F), Name(Config) -> do(fun() -> F(Config) end, Config)).
 -define(WRAP_DO(Name, F, A1), Name(A1, Config) -> do(fun() -> F(A1, Config) end, Config)).
@@ -40,10 +45,10 @@ do(W, R, Action, {?MODULE, #config{ database = Db } = Config}) ->
 
 % Insert model or models. When inserting models, the first model collection is
 % used.
--spec insert(pjm:model(), #config{}) -> pjm:model();
+-spec insert(pjm:model(), {?MODULE, #config{}}) -> pjm:model();
             ([pjm:model()], #config{}) -> [pjm:model()].
 insert(Model, Config) when is_tuple(Model) ->
-    insert([Model], Config);
+    hd(insert([Model], Config));
 insert([Model|_] = Models, _) ->
     Coll = get_collection(Model),
     Docs = lists:map(fun pjm_bson:to_bson/1, Models),
@@ -116,6 +121,15 @@ find_one(Module, Selector, Projector, Skip, Config) ->
 ?WRAP_DO(do_find_one, find_one, Model, Selector).
 ?WRAP_DO(do_find_one, find_one, Model, Selector, Projector).
 ?WRAP_DO(do_find_one, find_one, Model, Selector, Projector, Skip).
+
+-spec find_one_or_insert(pjm:model(), bson:document(), {?MODULE, #config{}}) -> pjm:model().
+find_one_or_insert(Model, Selector, Config) ->
+    case find_one(Model, Selector, [], 0, Config) of
+        {} -> insert(Model, Config);
+        {Result} -> Result
+    end.
+
+?WRAP_DO(do_find_one_or_insert, find_one_or_insert, Model, Selector).
 
 find(Module, Selector, Config) ->
     find(Module, Selector, [], 0, 0, Config).
