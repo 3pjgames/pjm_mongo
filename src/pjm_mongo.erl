@@ -9,8 +9,8 @@
 -export([delete/2, do_delete/2]).
 -export([find_one/3, find_one/4, find_one/5]).
 -export([do_find_one/3, do_find_one/4, do_find_one/5]).
--export([find_one_or_insert/3]).
--export([do_find_one_or_insert/3]).
+-export([find_one_or_insert/3, find_one_or_insert/4]).
+-export([do_find_one_or_insert/3, do_find_one_or_insert/4]).
 -export([find/3, find/4, find/5, find/6]).
 -export([do_find/3, do_find/4, do_find/5, do_find/6]).
 -export([command/2, do_command/2]).
@@ -124,12 +124,17 @@ find_one(Module, Selector, Projector, Skip, Config) ->
 
 -spec find_one_or_insert(pjm:model(), bson:document(), {?MODULE, #config{}}) -> pjm:model().
 find_one_or_insert(Model, Selector, Config) ->
-    case find_one(Model, Selector, [], 0, Config) of
+    find_one_or_insert(Model, Selector, [], Config).
+
+-spec find_one_or_insert(pjm:model(), bson:document(), mongo:projector(), {?MODULE, #config{}}) -> pjm:model().
+find_one_or_insert(Model, Selector, Projector, Config) ->
+    case find_one(Model, Selector, Projector, 0, Config) of
         {} -> insert(Model, Config);
         {Result} -> Result
     end.
 
 ?WRAP_DO(do_find_one_or_insert, find_one_or_insert, Model, Selector).
+?WRAP_DO(do_find_one_or_insert, find_one_or_insert, Model, Selector, Projector).
 
 find(Module, Selector, Config) ->
     find(Module, Selector, [], 0, 0, Config).
