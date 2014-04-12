@@ -15,6 +15,7 @@
 -export([do_find/3, do_find/4, do_find/5, do_find/6]).
 -export([command/2, do_command/2]).
 -export([list_collections/1, do_list_collections/1]).
+-export([get_collection/1]).
 
 -type mongo() :: {?MODULE, #config{}}.
 -export_type([mongo/0]).
@@ -186,6 +187,7 @@ objectid(Model) ->
         Id -> {pjm_bson:coerce(objectid, Id)}
     end.
 
+-spec get_collection(pjm:model()) -> atom().
 get_collection({pjm, Module, _} = Model) when is_tuple(Model) ->
     case pjm:info(stores_in, Model) of
         undefined -> Module;
