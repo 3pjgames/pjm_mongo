@@ -4,28 +4,28 @@
 -export([new/0, new/1]).
 -export([do/2, do/4]).
 
--export([insert/2, update/2, update/3, update/4, update/5, save/2]).
+-export([insert/1, update/1, update/2, update/3, update/4, save/1]).
 -export([do_insert/2, do_update/2, do_update/3, do_update/4, do_update/5, do_save/2]).
--export([delete/2, do_delete/2]).
--export([find_one/3, find_one/4, find_one/5]).
+-export([delete/1, do_delete/2]).
+-export([find_one/2, find_one/3, find_one/4]).
 -export([do_find_one/3, do_find_one/4, do_find_one/5]).
--export([find_one_or_insert/3, find_one_or_insert/4]).
+-export([find_one_or_insert/2, find_one_or_insert/3]).
 -export([do_find_one_or_insert/3, do_find_one_or_insert/4]).
--export([find/3, find/4, find/5, find/6]).
+-export([find/2, find/3, find/4, find/5]).
 -export([do_find/3, do_find/4, do_find/5, do_find/6]).
--export([command/2, do_command/2]).
--export([list_collections/1, do_list_collections/1]).
+-export([command/1, do_command/2]).
+-export([list_collections/0, do_list_collections/1]).
 -export([get_collection/1]).
 
 -type mongo() :: {?MODULE, #config{}}.
 -export_type([mongo/0]).
 
--define(WRAP_DO(Name, F), Name(Config) -> do(fun() -> F(Config) end, Config)).
--define(WRAP_DO(Name, F, A1), Name(A1, Config) -> do(fun() -> F(A1, Config) end, Config)).
--define(WRAP_DO(Name, F, A1, A2), Name(A1, A2, Config) -> do(fun() -> F(A1, A2, Config) end, Config)).
--define(WRAP_DO(Name, F, A1, A2, A3), Name(A1, A2, A3, Config) -> do(fun() -> F(A1, A2, A3, Config) end, Config)).
--define(WRAP_DO(Name, F, A1, A2, A3, A4), Name(A1, A2, A3, A4, Config) -> do(fun() -> F(A1, A2, A3, A4, Config) end, Config)).
--define(WRAP_DO(Name, F, A1, A2, A3, A4, A5), Name(A1, A2, A3, A4, A5, Config) -> do(fun() -> F(A1, A2, A3, A4, A5, Config) end, Config)).
+-define(WRAP_DO(Name, F), Name(Config) -> do(fun() -> F() end, Config)).
+-define(WRAP_DO(Name, F, A1), Name(A1, Config) -> do(fun() -> F(A1) end, Config)).
+-define(WRAP_DO(Name, F, A1, A2), Name(A1, A2, Config) -> do(fun() -> F(A1, A2) end, Config)).
+-define(WRAP_DO(Name, F, A1, A2, A3), Name(A1, A2, A3, Config) -> do(fun() -> F(A1, A2, A3) end, Config)).
+-define(WRAP_DO(Name, F, A1, A2, A3, A4), Name(A1, A2, A3, A4, Config) -> do(fun() -> F(A1, A2, A3, A4) end, Config)).
+-define(WRAP_DO(Name, F, A1, A2, A3, A4, A5), Name(A1, A2, A3, A4, A5, Config) -> do(fun() -> F(A1, A2, A3, A4, A5) end, Config)).
 
 -define(setup_do(F), {setup, fun start/0, fun stop/1, fun({_, M}) -> M:do(fun() -> F(M) end) end}).
 
@@ -46,11 +46,11 @@ do(W, R, Action, {?MODULE, #config{ database = Db } = Config}) ->
 
 % Insert model or models. When inserting models, the first model collection is
 % used.
--spec insert(pjm:model(), {?MODULE, #config{}}) -> pjm:model();
-            ([pjm:model()], #config{}) -> [pjm:model()].
-insert(Model, Config) when is_tuple(Model) ->
-    hd(insert([Model], Config));
-insert([Model|_] = Models, _) ->
+-spec insert(pjm:model()) -> pjm:model();
+            ([pjm:model()]) -> [pjm:model()].
+insert(Model) when is_tuple(Model) ->
+    hd(insert([Model]));
+insert([Model|_] = Models) ->
     Coll = get_collection(Model),
     Docs = lists:map(fun pjm_bson:to_bson/1, Models),
     Docs1 = mongo:insert(Coll, Docs),
@@ -67,24 +67,24 @@ insert([Model|_] = Models, _) ->
 
 ?WRAP_DO(do_insert, insert, Model).
 
-update(Model, Config) ->
-    save(Model, Config).
+update(Model) ->
+    save(Model).
 
-update(Model, Selector, Config) ->
-    update(Model, Selector, false, false, Config).
+update(Model, Selector) ->
+    update(Model, Selector, false, false).
 
-update(Model, Selector, Upsert, Config) ->
-    update(Model, Selector, Upsert, false, Config).
+update(Model, Selector, Upsert) ->
+    update(Model, Selector, Upsert, false).
 
-update(Model, Selector, Upsert, MultiUpdate, _Config) ->
+update(Model, Selector, Upsert, MultiUpdate) ->
     Coll = get_collection(Model),
     Doc = pjm_bson:to_bson(Model),
     mongo:update(Coll, Selector, Doc, Upsert, MultiUpdate).
 
-save(Model, Config) ->
+save(Model) ->
     case objectid(Model) of
-        {} -> insert(Model, Config);
-        {Id} -> update({'_id', Id}, Model)
+        {} -> insert(Model);
+        {Id} -> update(Model, {'_id', Id})
     end.
 
 ?WRAP_DO(do_update, update, Model).
@@ -93,7 +93,7 @@ save(Model, Config) ->
 ?WRAP_DO(do_update, update, Selector, Model, Upsert, MultiUpdate).
 ?WRAP_DO(do_save, save, Model).
 
-delete(Model, _) ->
+delete(Model) ->
     case objectid(Model) of
         {} -> ok;
         {Id} ->
@@ -103,50 +103,50 @@ delete(Model, _) ->
 
 ?WRAP_DO(do_delete, delete, Model).
 
-find_one(Model, Selector, Config) ->
-    find_one(Model, Selector, [], 0, Config).
+find_one(Model, Selector) ->
+    find_one(Model, Selector, [], 0).
 
-find_one(Model, Selector, Projector, Config) ->
-    find_one(Model, Selector, Projector, 0, Config).
+find_one(Model, Selector, Projector) ->
+    find_one(Model, Selector, Projector, 0).
 
-find_one(Model, Selector, Projector, Skip, _Config) when is_tuple(Model) ->
+find_one(Model, Selector, Projector, Skip) when is_tuple(Model) ->
     Coll = get_collection(Model),
     Result = mongo:find_one(Coll, Selector, Projector, Skip),
     case Result of
         {} -> {};
         {Doc} -> {pjm_bson:from_bson(Doc, Model)}
     end;
-find_one(Module, Selector, Projector, Skip, Config) ->
-    find_one(Module:new(), Selector, Projector, Skip, Config).
+find_one(Module, Selector, Projector, Skip) ->
+    find_one(Module:new(), Selector, Projector, Skip).
 
 ?WRAP_DO(do_find_one, find_one, Model, Selector).
 ?WRAP_DO(do_find_one, find_one, Model, Selector, Projector).
 ?WRAP_DO(do_find_one, find_one, Model, Selector, Projector, Skip).
 
--spec find_one_or_insert(pjm:model(), bson:document(), {?MODULE, #config{}}) -> pjm:model().
-find_one_or_insert(Model, Selector, Config) ->
-    find_one_or_insert(Model, Selector, [], Config).
+-spec find_one_or_insert(pjm:model(), bson:document()) -> pjm:model().
+find_one_or_insert(Model, Selector) ->
+    find_one_or_insert(Model, Selector, []).
 
--spec find_one_or_insert(pjm:model(), bson:document(), mongo:projector(), {?MODULE, #config{}}) -> pjm:model().
-find_one_or_insert(Model, Selector, Projector, Config) ->
-    case find_one(Model, Selector, Projector, 0, Config) of
-        {} -> insert(Model, Config);
+-spec find_one_or_insert(pjm:model(), bson:document(), mongo:projector()) -> pjm:model().
+find_one_or_insert(Model, Selector, Projector) ->
+    case find_one(Model, Selector, Projector, 0) of
+        {} -> insert(Model);
         {Result} -> Result
     end.
 
 ?WRAP_DO(do_find_one_or_insert, find_one_or_insert, Model, Selector).
 ?WRAP_DO(do_find_one_or_insert, find_one_or_insert, Model, Selector, Projector).
 
-find(Module, Selector, Config) ->
-    find(Module, Selector, [], 0, 0, Config).
+find(Module, Selector) ->
+    find(Module, Selector, [], 0, 0).
 
-find(Module, Selector, Projector, Config) ->
-    find(Module, Selector, Projector, 0, 0, Config).
+find(Module, Selector, Projector) ->
+    find(Module, Selector, Projector, 0, 0).
 
-find(Module, Selector, Projector, Skip, Config) ->
-    find(Module, Selector, Projector, Skip, 0, Config).
+find(Module, Selector, Projector, Skip) ->
+    find(Module, Selector, Projector, Skip, 0).
 
-find(Module, Selector, Projector, Skip, BatchSize, _Config) ->
+find(Module, Selector, Projector, Skip, BatchSize) ->
     Coll = get_collection(Module),
     Cursor = mongo:find(Coll, Selector, Projector, Skip, BatchSize),
     pjm_mongo_cursor:new(Module, Cursor).
@@ -157,12 +157,14 @@ find(Module, Selector, Projector, Skip, BatchSize, _Config) ->
 ?WRAP_DO(do_find, find, Model, Selector, Projector, Skip, BatchSize).
 
 %% @see mongo:command/1
-command(Command, _Config) ->
+command(Command) ->
     mongo:command(Command).
-do_command(Command, Config) ->
-    do(fun() -> mongo:command(Command) end, Config).
 
-list_collections({?MODULE, #config{ database = Db }}) ->
+?WRAP_DO(do_command, command, Command).
+
+list_collections() ->
+    Db = get_database(),
+    io:format("Db=~p~n", [Db]),
     DbBinary = atom_to_binary(Db, utf8),
     PrefixSize = size(DbBinary) + 1,
     GetName = fun({name, Name}, List) ->
@@ -199,4 +201,9 @@ get_collection(Module) ->
         Result -> Result
     end.
 
-
+%% Get database set in current context.
+%%
+%% 5 is magic number to get database from the internal record `context' in
+%% mongo.erl
+get_database() ->
+    element(5, erlang:get(mongo_action_context)).

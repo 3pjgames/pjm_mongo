@@ -12,6 +12,7 @@
 start() ->
     application:start(bson),
     application:start(mongodb),
+    catch pjm_mongo_config:sync_stop(?MODULE),
     {ok, Pid} = ?start_pjm_mongo_config(),
     Mongo = pjm_mongo:new(Pid),
     Mongo:do(fun() ->
@@ -19,7 +20,7 @@ start() ->
                       try mongo:command({drop, C})
                       catch
                           error:{bad_command, _} -> ok
-                      end || C <- Mongo:list_collections() ]
+                      end || C <- pjm_mongo:list_collections() ]
              end),
     {Pid, Mongo}.
 
@@ -69,8 +70,8 @@ find_test_() ->
     ?setup(
        fun({_, M}) ->
                M:do(fun() ->
-                            M:insert(new([{login, <<"ian">>}, {password, <<"secret">>}])),
-                            M:insert(new([{login, <<"ian">>}, {password, <<"x">>}]))
+                            pjm_mongo:insert(new([{login, <<"ian">>}, {password, <<"secret">>}])),
+                            pjm_mongo:insert(new([{login, <<"ian">>}, {password, <<"x">>}]))
                     end),
                Cursor = M:do_find(?MODULE, {login, <<"ian">>}),
                Docs = Cursor:rest(),

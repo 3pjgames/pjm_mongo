@@ -5,6 +5,7 @@
 start() ->
     application:start(bson),
     application:start(mongodb),
+    catch pjm_mongo_config:sync_stop(?MODULE),
     {ok, Pid} = ?start_pjm_mongo_config(),
     Pid.
 
