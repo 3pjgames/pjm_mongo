@@ -2,7 +2,7 @@
 -include("./pjm_mongo_config.hrl").
 
 -export([new/0, new/1]).
--export([do/2, do/4]).
+-export([do/1, do/2, do/4]).
 
 -export([insert/1, update/1, update/2, update/3, update/4, save/1]).
 -export([do_insert/2, do_update/2, do_update/3, do_update/4, do_update/5, do_save/2]).
@@ -34,6 +34,10 @@ new() ->
 
 new(ConfigPid) ->
     {?MODULE, pjm_mongo_config:get_config(ConfigPid)}.
+
+-spec do(fun(() -> A)) -> A.
+do(Action) ->
+    do(Action, new()).
 
 -spec do(fun(() -> A), {?MODULE, #config{}}) -> A.
 do(Action, {?MODULE, #config{ read_mode = R, write_mode = W, database = Db } = Config}) ->
